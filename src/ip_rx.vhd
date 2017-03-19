@@ -38,9 +38,9 @@ ENTITY ip_rx IS
 
         -- IPv4 payload data output bus to the UDP module.
         -- Byte offsets (all integer types are big endian):
-        -- 0: Source IP address
-        -- 4: Destination IP address
-        -- 8: Protocol
+        -- 0: Protocol
+        -- 1: Source IP address
+        -- 5: Destination IP address
         -- 9: IP datagram's data section
         Data_out : OUT STD_LOGIC_VECTOR(width * 8 - 1 DOWNTO 0);
         -- Assertion indicates which Data_out bytes are valid.
