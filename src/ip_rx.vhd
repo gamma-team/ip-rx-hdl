@@ -69,7 +69,7 @@ ARCHITECTURE normal OF ip_rx IS
     SIGNAL p0_data_in_err : STD_LOGIC;
 
     SIGNAL p0_len_read_place : UNSIGNED(15 DOWNTO 0);
-    SIGNAL p0_chk_accum_place : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p0_chk_accum_place : UNSIGNED(16 DOWNTO 0);
     SIGNAL data_in_sig : DATA_BUS;
 
 BEGIN
@@ -118,8 +118,9 @@ BEGIN
                             WHEN OTHERS =>
                                 NULL;
                         END CASE;
-                        IF TO_INTEGER(p0_len_read) < 20 THEN
-                            p0_chk_accum := p0_chk_accum + UNSIGNED(data_in_sig(i));
+                        IF p0_len_read < 20 AND i MOD 2 = 1 THEN
+                            p0_chk_accum := p0_chk_accum + (UNSIGNED(
+                                data_in_sig(i-1)) & UNSIGNED(data_in_sig(i)));
                             IF p0_chk_accum(16) = '1' THEN
                                 p0_chk_accum(16) := '0';
                                 p0_chk_accum := p0_chk_accum + 1;
@@ -130,7 +131,7 @@ BEGIN
                 END LOOP;
                 p0_len_read_place <= p0_len_read;
                 p0_chk_accum_place <= p0_chk_accum;
-                IF TO_INTEGER(p0_len_read) >= 20 THEN
+                IF p0_len_read >= 20 THEN
                     IF p0_chk_accum /= x"FFFF" THEN
                         p0_data_in_err <= '1';
                     END IF;
