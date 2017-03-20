@@ -68,7 +68,8 @@ ARCHITECTURE normal OF ip_rx IS
     SIGNAL p0_data_in_end : STD_LOGIC;
     SIGNAL p0_data_in_err : STD_LOGIC;
 
-    SIGNAL p0_len_read : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p0_len_read_place : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p0_chk_accum_place : UNSIGNED(15 DOWNTO 0);
     SIGNAL data_in_sig : DATA_BUS;
 
 BEGIN
@@ -78,8 +79,8 @@ BEGIN
     END GENERATE;
 
     PROCESS(Clk)
-        VARIABLE p0_off_var : UNSIGNED(p0_len_read'length - 1 DOWNTO 0);
-        VARIABLE p0_chk_accum : UNSIGNED(16 DOWNTO 0);
+        VARIABLE p0_len_read : UNSIGNED(p0_len_read_place'length - 1 DOWNTO 0);
+        VARIABLE p0_chk_accum : UNSIGNED(p0_chk_accum_place'length - 1 DOWNTO 0);
     BEGIN
         IF rising_edge(Clk) THEN
             IF Rst = '1' THEN
@@ -88,7 +89,8 @@ BEGIN
                 p0_data_in_start <= '0';
                 p0_data_in_end <= '0';
                 p0_data_in_err <= '0';
-                p0_len_read <= (OTHERS => '0');
+                p0_len_read_place <= (OTHERS => '0');
+                p0_chk_accum_place <= (OTHERS => '0');
             ELSE
                 p0_data_in <= data_in_sig;
                 p0_data_in_valid <= Data_in_valid;
@@ -96,14 +98,15 @@ BEGIN
                 p0_data_in_end <= Data_in_end;
                 p0_data_in_err <= Data_in_err;
 
-                p0_off_var := p0_len_read;
+                p0_len_read := p0_len_read_place;
+                p0_chk_accum := p0_chk_accum_place;
                 IF Data_in_start = '1' THEN
-                    p0_off_var := (OTHERS => '0');
+                    p0_len_read := (OTHERS => '0');
                 END IF;
                 FOR i IN 0 TO width - 1 LOOP
                     IF Data_in_valid(i) = '1' THEN
                         -- Protocol (offset 9) and addresses (12-19) are sent
-                        CASE TO_INTEGER(p0_off_var) IS
+                        CASE TO_INTEGER(p0_len_read) IS
                             WHEN 0 to 8 =>
                                 p0_data_in_valid(i) <= '0';
                             WHEN 9 =>
@@ -115,18 +118,19 @@ BEGIN
                             WHEN OTHERS =>
                                 NULL;
                         END CASE;
-                        p0_off_var := p0_off_var + 1;
-                        IF TO_INTEGER(p0_off_var) < 20 THEN
+                        IF TO_INTEGER(p0_len_read) < 20 THEN
                             p0_chk_accum := p0_chk_accum + UNSIGNED(data_in_sig(i));
                             IF p0_chk_accum(16) = '1' THEN
                                 p0_chk_accum(16) := '0';
                                 p0_chk_accum := p0_chk_accum + 1;
                             END IF;
                         END IF;
+                        p0_len_read := p0_len_read + 1;
                     END IF;
                 END LOOP;
-                p0_len_read <= p0_off_var;
-                IF TO_INTEGER(p0_off_var) >= 20 THEN
+                p0_len_read_place <= p0_len_read;
+                p0_chk_accum_place <= p0_chk_accum;
+                IF TO_INTEGER(p0_len_read) >= 20 THEN
                     IF p0_chk_accum /= x"FFFF" THEN
                         p0_data_in_err <= '1';
                     END IF;
