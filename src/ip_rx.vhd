@@ -91,36 +91,37 @@ BEGIN
                 p0_data_in_err <= '0';
                 p0_len_read_place <= (OTHERS => '0');
                 p0_chk_accum_place <= (OTHERS => '0');
+                p0_len_read := (OTHERS => '0');
             ELSE
                 p0_data_in <= data_in_sig;
                 p0_data_in_valid <= Data_in_valid;
                 p0_data_in_start <= Data_in_start;
                 p0_data_in_end <= Data_in_end;
-                p0_data_in_err <= Data_in_err;
+                IF p0_data_in_err = '0' THEN
+                    p0_data_in_err <= Data_in_err;
+                END IF;
 
                 p0_len_read := p0_len_read_place;
                 p0_chk_accum := p0_chk_accum_place;
-                IF Data_in_start = '1' THEN
-                    p0_len_read := (OTHERS => '0');
-                END IF;
+
                 FOR i IN 0 TO width - 1 LOOP
-                    IF Data_in_valid(i) = '1' THEN
+                    IF Data_in_valid(7-i) = '1' THEN
                         -- Protocol (offset 9) and addresses (12-19) are sent
                         CASE TO_INTEGER(p0_len_read) IS
                             WHEN 0 to 8 =>
-                                p0_data_in_valid(i) <= '0';
+                                p0_data_in_valid(7-i) <= '0';
                             WHEN 9 =>
-                                IF data_in_sig(i) /= UDP_PROTO THEN
+                                IF data_in_sig(7-i) /= UDP_PROTO THEN
                                     p0_data_in_err <= '1';
                                 END IF;
                             WHEN 10 | 11 =>
-                                p0_data_in_valid(i) <= '0';
+                                p0_data_in_valid(7-i) <= '0';
                             WHEN OTHERS =>
                                 NULL;
                         END CASE;
                         IF p0_len_read < 20 AND i MOD 2 = 1 THEN
                             p0_chk_accum := p0_chk_accum + (UNSIGNED(
-                                data_in_sig(i-1)) & UNSIGNED(data_in_sig(i)));
+                                data_in_sig(8-i)) & UNSIGNED(data_in_sig(7-i)));
                             IF p0_chk_accum(16) = '1' THEN
                                 p0_chk_accum(16) := '0';
                                 p0_chk_accum := p0_chk_accum + 1;
