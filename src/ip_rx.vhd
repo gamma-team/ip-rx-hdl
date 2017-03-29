@@ -100,7 +100,10 @@ BEGIN
                 IF p0_data_in_err = '0' THEN
                     p0_data_in_err <= Data_in_err;
                 END IF;
-
+                IF Data_in_end = '1' THEN
+                    p0_len_read_place <= (OTHERS => '0');
+                    p0_chk_accum_place <= (OTHERS => '0');
+                END IF;
                 p0_len_read := p0_len_read_place;
                 p0_chk_accum := p0_chk_accum_place;
 
