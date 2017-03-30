@@ -62,8 +62,6 @@ ARCHITECTURE normal OF ip_rx IS
 
     -- Keeping pipeline prefix for potential future addition
     SIGNAL p0_data_in : DATA_BUS;
-    SIGNAL p0_data_in_valid
-        : STD_LOGIC_VECTOR(Data_in_valid'length - 1 DOWNTO 0);
     SIGNAL p0_data_in_start : STD_LOGIC;
     SIGNAL p0_data_in_end : STD_LOGIC;
     SIGNAL p0_data_in_err : STD_LOGIC;
@@ -81,11 +79,11 @@ BEGIN
     PROCESS(Clk)
         VARIABLE p0_len_read : UNSIGNED(p0_len_read_place'length - 1 DOWNTO 0);
         VARIABLE p0_chk_accum : UNSIGNED(p0_chk_accum_place'length - 1 DOWNTO 0);
+        VARIABLE p0_data_in_valid : UNSIGNED(Data_in_valid'length -1 DOWNTO 0);
     BEGIN
         IF rising_edge(Clk) THEN
             IF Rst = '1' THEN
                 p0_data_in <= (OTHERS => x"00");
-                p0_data_in_valid <= (OTHERS => '0');
                 p0_data_in_start <= '0';
                 p0_data_in_end <= '0';
                 p0_data_in_err <= '0';
@@ -94,7 +92,6 @@ BEGIN
                 p0_len_read := (OTHERS => '0');
             ELSE
                 p0_data_in <= data_in_sig;
-                p0_data_in_valid <= Data_in_valid;
                 p0_data_in_start <= Data_in_start;
                 p0_data_in_end <= Data_in_end;
                 IF p0_data_in_err = '0' THEN
@@ -104,21 +101,22 @@ BEGIN
                     p0_len_read_place <= (OTHERS => '0');
                     p0_chk_accum_place <= (OTHERS => '0');
                 END IF;
+                p0_data_in_valid := UNSIGNED(Data_in_valid);
                 p0_len_read := p0_len_read_place;
                 p0_chk_accum := p0_chk_accum_place;
 
                 FOR i IN 0 TO width - 1 LOOP
-                    IF Data_in_valid(7-i) = '1' THEN
+                    IF p0_data_in_valid(7-i) = '1' THEN
                         -- Protocol (offset 9) and addresses (12-19) are sent
                         CASE TO_INTEGER(p0_len_read) IS
                             WHEN 0 to 8 =>
-                                p0_data_in_valid(7-i) <= '0';
+                                p0_data_in_valid(7-i) := '0';
                             WHEN 9 =>
                                 IF data_in_sig(7-i) /= UDP_PROTO THEN
                                     p0_data_in_err <= '1';
                                 END IF;
                             WHEN 10 | 11 =>
-                                p0_data_in_valid(7-i) <= '0';
+                                p0_data_in_valid(7-i) := '0';
                             WHEN OTHERS =>
                                 NULL;
                         END CASE;
@@ -135,6 +133,7 @@ BEGIN
                 END LOOP;
                 p0_len_read_place <= p0_len_read;
                 p0_chk_accum_place <= p0_chk_accum;
+                Data_out_valid <= STD_LOGIC_VECTOR(p0_data_in_valid);
                 IF p0_len_read >= 20 THEN
                     IF p0_chk_accum /= x"FFFF" THEN
                         p0_data_in_err <= '1';
@@ -148,7 +147,6 @@ BEGIN
     gen_out_data: FOR i IN 0 TO width - 1 GENERATE
         Data_out((i + 1) * 8 - 1 DOWNTO i * 8) <= p0_data_in(i);
     END GENERATE;
-    Data_out_valid <= p0_data_in_valid;
     Data_out_start <= p0_data_in_start;
     Data_out_end <= p0_data_in_end;
     Data_out_err <= p0_data_in_err;
