@@ -60,15 +60,87 @@ ARCHITECTURE normal OF ip_rx IS
     TYPE DATA_BUS IS ARRAY (width - 1 DOWNTO 0)
         OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 
-    -- Keeping pipeline prefix for potential future addition
+    SIGNAL data_in_sig : DATA_BUS;
+    SIGNAL start_len_read_sig : UNSIGNED(15 DOWNTO 0);
+
     SIGNAL p0_data_in : DATA_BUS;
+    SIGNAL p0_data_in_valid
+        : STD_LOGIC_VECTOR(Data_in_valid'length - 1 DOWNTO 0);
     SIGNAL p0_data_in_start : STD_LOGIC;
     SIGNAL p0_data_in_end : STD_LOGIC;
     SIGNAL p0_data_in_err : STD_LOGIC;
+    SIGNAL p0_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p0_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
 
-    SIGNAL p0_len_read_place : UNSIGNED(15 DOWNTO 0);
-    SIGNAL p0_chk_accum_place : UNSIGNED(16 DOWNTO 0);
-    SIGNAL data_in_sig : DATA_BUS;
+    SIGNAL p1_data_in : DATA_BUS;
+    SIGNAL p1_data_in_valid
+        : STD_LOGIC_VECTOR(p0_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p1_data_in_start : STD_LOGIC;
+    SIGNAL p1_data_in_end : STD_LOGIC;
+    SIGNAL p1_data_in_err : STD_LOGIC;
+    SIGNAL p1_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p1_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p2_data_in : DATA_BUS;
+    SIGNAL p2_data_in_valid
+        : STD_LOGIC_VECTOR(p1_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p2_data_in_start : STD_LOGIC;
+    SIGNAL p2_data_in_end : STD_LOGIC;
+    SIGNAL p2_data_in_err : STD_LOGIC;
+    SIGNAL p2_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p2_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p3_data_in : DATA_BUS;
+    SIGNAL p3_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p3_data_in_start : STD_LOGIC;
+    SIGNAL p3_data_in_end : STD_LOGIC;
+    SIGNAL p3_data_in_err : STD_LOGIC;
+    SIGNAL p3_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p3_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p4_data_in : DATA_BUS;
+    SIGNAL p4_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p4_data_in_start : STD_LOGIC;
+    SIGNAL p4_data_in_end : STD_LOGIC;
+    SIGNAL p4_data_in_err : STD_LOGIC;
+    SIGNAL p4_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p4_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p5_data_in : DATA_BUS;
+    SIGNAL p5_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p5_data_in_start : STD_LOGIC;
+    SIGNAL p5_data_in_end : STD_LOGIC;
+    SIGNAL p5_data_in_err : STD_LOGIC;
+    SIGNAL p5_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p5_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p6_data_in : DATA_BUS;
+    SIGNAL p6_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p6_data_in_start : STD_LOGIC;
+    SIGNAL p6_data_in_end : STD_LOGIC;
+    SIGNAL p6_data_in_err : STD_LOGIC;
+    SIGNAL p6_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p6_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p7_data_in : DATA_BUS;
+    SIGNAL p7_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p7_data_in_start : STD_LOGIC;
+    SIGNAL p7_data_in_end : STD_LOGIC;
+    SIGNAL p7_data_in_err : STD_LOGIC;
+    SIGNAL p7_len_read_sig : UNSIGNED(15 DOWNTO 0);
+    SIGNAL p7_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
+
+    SIGNAL p8_data_in : DATA_BUS;
+    SIGNAL p8_data_in_valid
+        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+    SIGNAL p8_data_in_start : STD_LOGIC;
+    SIGNAL p8_data_in_end : STD_LOGIC;
+    SIGNAL p8_data_in_err : STD_LOGIC;
 
 BEGIN
     -- Input signal wiring
@@ -77,67 +149,452 @@ BEGIN
     END GENERATE;
 
     PROCESS(Clk)
-        VARIABLE p0_len_read : UNSIGNED(p0_len_read_place'length - 1 DOWNTO 0);
-        VARIABLE p0_chk_accum : UNSIGNED(p0_chk_accum_place'length - 1 DOWNTO 0);
-        VARIABLE p0_data_in_valid : UNSIGNED(Data_in_valid'length -1 DOWNTO 0);
+        VARIABLE start_valid_count : UNSIGNED(3 DOWNTO 0) := (OTHERS => '0');
+        VARIABLE checksum_buffer : UNSIGNED(20 DOWNTO 0);
     BEGIN
         IF rising_edge(Clk) THEN
             IF Rst = '1' THEN
+                start_len_read_sig <= (OTHERS => '0');
+
                 p0_data_in <= (OTHERS => x"00");
+                p0_data_in_valid <= (OTHERS => '0');
                 p0_data_in_start <= '0';
                 p0_data_in_end <= '0';
                 p0_data_in_err <= '0';
-                p0_len_read_place <= (OTHERS => '0');
-                p0_chk_accum_place <= (OTHERS => '0');
-                p0_len_read := (OTHERS => '0');
+                p0_len_read_sig <= (OTHERS => '0');
+                p0_chk_accum_sig <= (OTHERS => '0');
+
+                p1_data_in <= (OTHERS => x"00");
+                p1_data_in_valid <= (OTHERS => '0');
+                p1_data_in_start <= '0';
+                p1_data_in_end <= '0';
+                p0_data_in_err <= '0';
+                p1_len_read_sig <= (OTHERS => '0');
+                p1_chk_accum_sig <= (OTHERS => '0');
+
+                p2_data_in <= (OTHERS => x"00");
+                p2_data_in_valid <= (OTHERS => '0');
+                p2_data_in_start <= '0';
+                p2_data_in_end <= '0';
+                p2_data_in_err <= '0';
+                p2_len_read_sig <= (OTHERS => '0');
+                p2_chk_accum_sig <= (OTHERS => '0');
+
+                p3_data_in <= (OTHERS => x"00");
+                p3_data_in_valid <= (OTHERS => '0');
+                p0_data_in_start <= '0';
+                p3_data_in_end <= '0';
+                p3_data_in_err <= '0';
+                p3_len_read_sig <= (OTHERS => '0');
+                p3_chk_accum_sig <= (OTHERS => '0');
+
+                p4_data_in <= (OTHERS => x"00");
+                p4_data_in_valid <= (OTHERS => '0');
+                p4_data_in_start <= '0';
+                p4_data_in_end <= '0';
+                p0_data_in_err <= '0';
+                p4_len_read_sig <= (OTHERS => '0');
+                p4_chk_accum_sig <= (OTHERS => '0');
+
+                p5_data_in <= (OTHERS => x"00");
+                p5_data_in_valid <= (OTHERS => '0');
+                p5_data_in_start <= '0';
+                p0_data_in_end <= '0';
+                p5_data_in_err <= '0';
+                p5_len_read_sig <= (OTHERS => '0');
+                p5_chk_accum_sig <= (OTHERS => '0');
+
+                p6_data_in <= (OTHERS => x"00");
+                p6_data_in_valid <= (OTHERS => '0');
+                p6_data_in_start <= '0';
+                p6_data_in_end <= '0';
+                p6_data_in_err <= '0';
+                p6_len_read_sig <= (OTHERS => '0');
+                p6_chk_accum_sig <= (OTHERS => '0');
+
+                p7_data_in <= (OTHERS => x"00");
+                p7_data_in_valid <= (OTHERS => '0');
+                p7_data_in_start <= '0';
+                p7_data_in_end <= '0';
+                p7_data_in_err <= '0';
+                p7_len_read_sig <= (OTHERS => '0');
+                p7_chk_accum_sig <= (OTHERS => '0');
+
+                p8_data_in <= (OTHERS => x"00");
+                p8_data_in_valid <= (OTHERS => '0');
+                p8_data_in_start <= '0';
+                p8_data_in_end <= '0';
+                p8_data_in_err <= '0';
+
             ELSE
+                -- Begin sets for Stage 0 of Pipeline
+                -- This is before Pre-Stage 0 so p0_data_in_valid changes
+                -- overwrite values from Data_in_valid
                 p0_data_in <= data_in_sig;
+                p0_data_in_valid <= Data_in_valid;
                 p0_data_in_start <= Data_in_start;
                 p0_data_in_end <= Data_in_end;
                 IF p0_data_in_err = '0' THEN
                     p0_data_in_err <= Data_in_err;
                 END IF;
                 IF Data_in_end = '1' THEN
-                    p0_len_read_place <= (OTHERS => '0');
-                    p0_chk_accum_place <= (OTHERS => '0');
+                    start_len_read_sig <= (OTHERS => '0');
                 END IF;
-                p0_data_in_valid := UNSIGNED(Data_in_valid);
-                p0_len_read := p0_len_read_place;
-                p0_chk_accum := p0_chk_accum_place;
-
-                FOR i IN 0 TO width - 1 LOOP
-                    IF p0_data_in_valid(7-i) = '1' THEN
-                        -- Protocol (offset 9) and addresses (12-19) are sent
-                        CASE TO_INTEGER(p0_len_read) IS
-                            WHEN 0 to 8 =>
-                                p0_data_in_valid(7-i) := '0';
-                            WHEN 9 =>
-                                IF data_in_sig(7-i) /= UDP_PROTO THEN
-                                    p0_data_in_err <= '1';
-                                END IF;
-                            WHEN 10 | 11 =>
-                                p0_data_in_valid(7-i) := '0';
-                            WHEN OTHERS =>
-                                NULL;
-                        END CASE;
-                        IF p0_len_read < 20 AND i MOD 2 = 1 THEN
-                            p0_chk_accum := p0_chk_accum + (UNSIGNED(
-                                data_in_sig(8-i)) & UNSIGNED(data_in_sig(7-i)));
-                            IF p0_chk_accum(16) = '1' THEN
-                                p0_chk_accum(16) := '0';
-                                p0_chk_accum := p0_chk_accum + 1;
-                            END IF;
-                        END IF;
-                        p0_len_read := p0_len_read + 1;
+                FOR i in 0 to width - 1 LOOP
+                    IF Data_in_valid(i) = '1' THEN
+                        start_valid_count := start_valid_count + 1;
                     END IF;
                 END LOOP;
-                p0_len_read_place <= p0_len_read;
-                p0_chk_accum_place <= p0_chk_accum;
-                Data_out_valid <= STD_LOGIC_VECTOR(p0_data_in_valid);
-                IF p0_len_read >= 20 THEN
-                    IF p0_chk_accum /= x"FFFF" THEN
-                        p0_data_in_err <= '1';
+                start_len_read_sig <= start_len_read_sig + start_valid_count;
+                p0_len_read_sig <= start_len_read_sig;
+                -- End sets for Stage 0 of Pipeline
+
+                -- Start Pre-Stage 0 of Pipeline
+
+                IF Data_in_valid(7) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(start_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p0_data_in_valid(7) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(7) /= UDP_PROTO THEN
+                                p0_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p0_data_in_valid(7) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF start_len_read_sig < 20 THEN
+                         -- Todo: test other ways of padding to see effect
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p0_chk_accum_sig <= "00000" & UNSIGNED(data_in_sig(7)) & x"00";
+                        ELSE
+                            p0_chk_accum_sig <= "0" & x"000" & UNSIGNED(data_in_sig(7));
+                        END IF;
                     END IF;
+                    p0_len_read_sig <= start_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 1 of Pipeline
+
+                p1_data_in <= p0_data_in;
+                p1_data_in_valid <= p0_data_in_valid;
+                p1_data_in_start <= p0_data_in_start;
+                p1_data_in_end <= p0_data_in_end;
+                IF p1_data_in_err = '0' THEN
+                    p1_data_in_err <= p0_data_in_err;
+                END IF;
+                p1_len_read_sig <= p0_len_read_sig;
+                p1_chk_accum_sig <= p0_chk_accum_sig;
+
+                -- End sets for Stage 1 of Pipeline
+
+                -- Start of Stage 0
+
+                IF Data_in_valid(6) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p0_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p1_data_in_valid(6) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(6) /= UDP_PROTO THEN
+                                p1_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p1_data_in_valid(6) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p0_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p1_chk_accum_sig <= UNSIGNED(data_in_sig(6)) & x"00"
+                                + p0_chk_accum_sig;
+                        ELSE
+                            p1_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(6))
+                                + p0_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p1_len_read_sig <= p0_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 2 of Pipeline
+
+                p2_data_in <= p1_data_in;
+                p2_data_in_valid <= p1_data_in_valid;
+                p2_data_in_start <= p1_data_in_start;
+                p2_data_in_end <= p1_data_in_end;
+                IF p2_data_in_err = '0' THEN
+                    p2_data_in_err <= p1_data_in_err;
+                END IF;
+                p2_len_read_sig <= p1_len_read_sig;
+                p2_chk_accum_sig <= p1_chk_accum_sig;
+
+                -- End sets for Stage 2 of Pipeline
+
+                -- Start of Stage 1
+
+                IF Data_in_valid(5) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p1_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p2_data_in_valid(5) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(5) /= UDP_PROTO THEN
+                                p2_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p2_data_in_valid(5) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p1_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p2_chk_accum_sig <= UNSIGNED(data_in_sig(5)) & x"00"
+                                + p1_chk_accum_sig;
+                        ELSE
+                            p2_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(5))
+                                + p1_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p2_len_read_sig <= p1_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 3 of Pipeline
+
+                p3_data_in <= p2_data_in;
+                p3_data_in_valid <= p2_data_in_valid;
+                p3_data_in_start <= p2_data_in_start;
+                p3_data_in_end <= p2_data_in_end;
+                IF p3_data_in_err = '0' THEN
+                    p3_data_in_err <= p2_data_in_err;
+                END IF;
+                p3_len_read_sig <= p2_len_read_sig;
+                p3_chk_accum_sig <= p2_chk_accum_sig;
+
+                -- End sets for Stage 3 of Pipeline
+
+                -- Start of Stage 2
+
+                IF Data_in_valid(4) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p2_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p3_data_in_valid(4) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(4) /= UDP_PROTO THEN
+                                p3_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p3_data_in_valid(4) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p2_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p3_chk_accum_sig <= UNSIGNED(data_in_sig(4)) & x"00"
+                                + p2_chk_accum_sig;
+                        ELSE
+                            p3_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(4))
+                                + p2_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p3_len_read_sig <= p2_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 4 of Pipeline
+
+                p4_data_in <= p3_data_in;
+                p4_data_in_valid <= p3_data_in_valid;
+                p4_data_in_start <= p3_data_in_start;
+                p4_data_in_end <= p3_data_in_end;
+                IF p4_data_in_err = '0' THEN
+                    p4_data_in_err <= p3_data_in_err;
+                END IF;
+                p4_len_read_sig <= p3_len_read_sig;
+                p4_chk_accum_sig <= p3_chk_accum_sig;
+
+                -- End sets for Stage 4 of Pipeline
+
+                -- Start of Stage 3
+
+                IF Data_in_valid(3) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p3_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p4_data_in_valid(3) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(3) /= UDP_PROTO THEN
+                                p4_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p4_data_in_valid(3) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p3_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p4_chk_accum_sig <= UNSIGNED(data_in_sig(3)) & x"00"
+                                + p3_chk_accum_sig;
+                        ELSE
+                            p4_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(3))
+                                + p3_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p4_len_read_sig <= p3_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 5 of Pipeline
+
+                p5_data_in <= p4_data_in;
+                p5_data_in_valid <= p4_data_in_valid;
+                p5_data_in_start <= p4_data_in_start;
+                p5_data_in_end <= p4_data_in_end;
+                IF p5_data_in_err = '0' THEN
+                    p5_data_in_err <= p4_data_in_err;
+                END IF;
+                p5_len_read_sig <= p4_len_read_sig;
+                p5_chk_accum_sig <= p4_chk_accum_sig;
+
+                -- End sets for Stage 5 of Pipeline
+
+                -- Start of Stage 4
+
+                IF Data_in_valid(2) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p4_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p5_data_in_valid(2) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(2) /= UDP_PROTO THEN
+                                p5_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p5_data_in_valid(2) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p4_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p5_chk_accum_sig <= UNSIGNED(data_in_sig(2)) & x"00"
+                                + p4_chk_accum_sig;
+                        ELSE
+                            p5_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(2))
+                                + p4_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p5_len_read_sig <= p4_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 6 of Pipeline
+
+                p6_data_in <= p5_data_in;
+                p6_data_in_valid <= p5_data_in_valid;
+                p6_data_in_start <= p5_data_in_start;
+                p6_data_in_end <= p5_data_in_end;
+                IF p6_data_in_err = '0' THEN
+                    p6_data_in_err <= p5_data_in_err;
+                END IF;
+                p6_len_read_sig <= p5_len_read_sig;
+                p6_chk_accum_sig <= p5_chk_accum_sig;
+
+                -- End sets for Stage 6 of Pipeline
+
+                -- Start of Stage 5
+
+                IF Data_in_valid(1) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p5_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p6_data_in_valid(1) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(1) /= UDP_PROTO THEN
+                                p6_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p6_data_in_valid(1) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p5_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p6_chk_accum_sig <= UNSIGNED(data_in_sig(1)) & x"00"
+                                + p5_chk_accum_sig;
+                        ELSE
+                            p6_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(1))
+                                + p5_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p6_len_read_sig <= p5_len_read_sig + 1;
+                END IF;
+
+                -- Start sets for Stage 7 of Pipeline
+
+                p7_data_in <= p6_data_in;
+                p7_data_in_valid <= p6_data_in_valid;
+                p7_data_in_start <= p6_data_in_start;
+                p7_data_in_end <= p6_data_in_end;
+                IF p7_data_in_err = '0' THEN
+                    p7_data_in_err <= p6_data_in_err;
+                END IF;
+                p7_len_read_sig <= p6_len_read_sig;
+                p7_chk_accum_sig <= p6_chk_accum_sig;
+
+                -- End sets for Stage 7 of Pipeline
+
+                -- Start of Stage 6
+
+                IF Data_in_valid(0) = '1' THEN
+                -- start_valid_count hasn't been added to start_len_read_sig yet
+                    CASE TO_INTEGER(p6_len_read_sig) IS
+                        WHEN 0 to 8 =>
+                            p7_data_in_valid(0) <= '0';
+                        WHEN 9 =>
+                            IF data_in_sig(0) /= UDP_PROTO THEN
+                                p7_data_in_err <= '1';
+                            END IF;
+                        WHEN 10 | 11 =>
+                            p7_data_in_valid(0) <= '0';
+                        WHEN OTHERS =>
+                            NULL;
+                    END CASE;
+                    IF p6_len_read_sig < 20 THEN
+                        IF start_len_read_sig MOD 2 = 0 THEN
+                            p7_chk_accum_sig <= UNSIGNED(data_in_sig(0)) & x"00"
+                                + p6_chk_accum_sig;
+                        ELSE
+                            p7_chk_accum_sig <= x"00" & UNSIGNED(data_in_sig(0))
+                                + p6_chk_accum_sig;
+                        END IF;
+                    END IF;
+                    p7_len_read_sig <= p6_len_read_sig + 1;
+                END IF;
+
+                -- Sets for Stage 8 of Pipeline (Output)
+
+                p8_data_in <= p7_data_in;
+                p8_data_in_valid <= p7_data_in_valid;
+                p8_data_in_start <= p7_data_in_start;
+                p8_data_in_end <= p7_data_in_end;
+                IF p8_data_in_err = '0' THEN
+                    p8_data_in_err <= p7_data_in_err;
+                END IF;
+
+                -- End sets for Stage 8 of Pipeline (Output)
+
+                -- Start of Stage 7
+
+                checksum_buffer := p7_chk_accum_sig;
+                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
+                    checksum_buffer := checksum_buffer(20 DOWNTO 16) +
+                        "00000" & checksum_buffer(15 DOWNTO 0);
+                END IF;
+                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
+                    checksum_buffer := checksum_buffer(20 DOWNTO 16) +
+                        "00000" & checksum_buffer(15 DOWNTO 0);
+                END IF;
+                IF checksum_buffer /= x"FFFF" THEN
+                    p8_data_in_err <= '1';
                 END IF;
             END IF;
         END IF;
@@ -145,9 +602,11 @@ BEGIN
 
     -- Output signal wiring
     gen_out_data: FOR i IN 0 TO width - 1 GENERATE
-        Data_out((i + 1) * 8 - 1 DOWNTO i * 8) <= p0_data_in(i);
+        Data_out((i + 1) * 8 - 1 DOWNTO i * 8) <= p8_data_in(i);
     END GENERATE;
-    Data_out_start <= p0_data_in_start;
-    Data_out_end <= p0_data_in_end;
-    Data_out_err <= p0_data_in_err;
+    Data_out_valid <= p8_data_in_valid;
+    Data_out_start <= p8_data_in_start;
+    Data_out_end <= p8_data_in_end;
+    Data_out_err <= p8_data_in_err;
 END ARCHITECTURE;
+
