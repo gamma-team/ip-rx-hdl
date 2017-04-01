@@ -293,7 +293,6 @@ BEGIN
                 -- Start of Stage 0
 
                 IF Data_in_valid(6) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p0_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p1_data_in_valid(6) <= '0';
@@ -335,7 +334,6 @@ BEGIN
                 -- Start of Stage 1
 
                 IF Data_in_valid(5) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p1_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p2_data_in_valid(5) <= '0';
@@ -377,7 +375,6 @@ BEGIN
                 -- Start of Stage 2
 
                 IF Data_in_valid(4) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p2_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p3_data_in_valid(4) <= '0';
@@ -419,7 +416,6 @@ BEGIN
                 -- Start of Stage 3
 
                 IF Data_in_valid(3) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p3_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p4_data_in_valid(3) <= '0';
@@ -461,7 +457,6 @@ BEGIN
                 -- Start of Stage 4
 
                 IF Data_in_valid(2) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p4_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p5_data_in_valid(2) <= '0';
@@ -503,7 +498,6 @@ BEGIN
                 -- Start of Stage 5
 
                 IF Data_in_valid(1) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p5_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p6_data_in_valid(1) <= '0';
@@ -545,7 +539,6 @@ BEGIN
                 -- Start of Stage 6
 
                 IF Data_in_valid(0) = '1' THEN
-                -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(p6_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p7_data_in_valid(0) <= '0';
