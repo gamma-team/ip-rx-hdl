@@ -598,12 +598,14 @@ BEGIN
                         checksum_buffer(20 DOWNTO 16)) +
                         unsigned'("00000" & checksum_buffer(15 DOWNTO 0));
                 END IF;
-                IF (p8_data_in_end = '1') THEN
-                    checksum_buffer := (others => '0');
-                END IF;
                 IF TO_INTEGER(p7_len_read_sig) > 19 THEN
-                    IF checksum_buffer /= x"FFFF" THEN
-                        p8_data_in_err <= '1';
+                    IF TO_INTEGER(p7_len_read_sig) > 30 OR p8_data_in_end = '1' THEN
+                        checksum_buffer := (others => '0');
+                        p8_data_in_err <= p8_data_in_err and (not p8_data_in_end);
+                    ELSE
+                        IF checksum_buffer /= x"FFFF" THEN
+                            p8_data_in_err <= '1';
+                        END IF;
                     END IF;
                 END IF;
             END IF;
