@@ -168,7 +168,7 @@ BEGIN
                 p1_data_in_valid <= (OTHERS => '0');
                 p1_data_in_start <= '0';
                 p1_data_in_end <= '0';
-                p0_data_in_err <= '0';
+                p1_data_in_err <= '0';
                 p1_len_read_sig <= (OTHERS => '0');
                 p1_chk_accum_sig <= (OTHERS => '0');
 
@@ -182,7 +182,7 @@ BEGIN
 
                 p3_data_in <= (OTHERS => x"00");
                 p3_data_in_valid <= (OTHERS => '0');
-                p0_data_in_start <= '0';
+                p3_data_in_start <= '0';
                 p3_data_in_end <= '0';
                 p3_data_in_err <= '0';
                 p3_len_read_sig <= (OTHERS => '0');
@@ -192,14 +192,14 @@ BEGIN
                 p4_data_in_valid <= (OTHERS => '0');
                 p4_data_in_start <= '0';
                 p4_data_in_end <= '0';
-                p0_data_in_err <= '0';
+                p4_data_in_err <= '0';
                 p4_len_read_sig <= (OTHERS => '0');
                 p4_chk_accum_sig <= (OTHERS => '0');
 
                 p5_data_in <= (OTHERS => x"00");
                 p5_data_in_valid <= (OTHERS => '0');
                 p5_data_in_start <= '0';
-                p0_data_in_end <= '0';
+                p5_data_in_end <= '0';
                 p5_data_in_err <= '0';
                 p5_len_read_sig <= (OTHERS => '0');
                 p5_chk_accum_sig <= (OTHERS => '0');
@@ -586,8 +586,10 @@ BEGIN
                     checksum_buffer := checksum_buffer(20 DOWNTO 16) +
                         "00000" & checksum_buffer(15 DOWNTO 0);
                 END IF;
-                IF checksum_buffer /= x"FFFF" THEN
-                    p8_data_in_err <= '1';
+                IF TO_INTEGER(p7_len_read_sig) > 19 THEN
+                    IF checksum_buffer /= x"FFFF" THEN
+                        p8_data_in_err <= '1';
+                    END IF;
                 END IF;
             END IF;
         END IF;
