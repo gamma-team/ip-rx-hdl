@@ -141,7 +141,7 @@ ARCHITECTURE normal OF ip_rx IS
     SIGNAL p8_data_in_start : STD_LOGIC;
     SIGNAL p8_data_in_end : STD_LOGIC;
     SIGNAL p8_data_in_err : STD_LOGIC;
-
+    SIGNAL chk_sum_int: unsigned(20 downto 0);
 BEGIN
     -- Input signal wiring
     gen_in_data: FOR i IN 0 TO width - 1 GENERATE
@@ -241,9 +241,12 @@ BEGIN
                     END IF;
                 END LOOP;
                 start_len_read_sig <= start_len_read_sig + start_valid_count;
-                p0_len_read_sig <= start_len_read_sig;
+                start_valid_count := (others => '0');       
+                p0_len_read_sig <= start_len_read_sig + unsigned'(""&Data_in_valid(7));
                 IF Data_in_end = '1' THEN
                     start_len_read_sig <= (OTHERS => '0');
+                    p0_chk_accum_sig <= (OTHERS => '0');
+                    
                 END IF;
                 -- End sets for Stage 0 of Pipeline
 
@@ -271,7 +274,7 @@ BEGIN
                             p0_chk_accum_sig <= "0" & x"000" & UNSIGNED(data_in_sig(7));
                         END IF;
                     END IF;
-                    p0_len_read_sig <= start_len_read_sig + 1;
+                    --p0_len_read_sig <= start_len_read_sig + 1;
                 END IF;
 
                 -- Start sets for Stage 1 of Pipeline
@@ -304,7 +307,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p0_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p0_len_read_sig MOD 2 = 0 THEN
                             p1_chk_accum_sig <= UNSIGNED(p0_data_in(6)) & x"00"
                                 + p0_chk_accum_sig;
                         ELSE
@@ -345,7 +348,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p1_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p1_len_read_sig MOD 2 = 0 THEN
                             p2_chk_accum_sig <= UNSIGNED(p1_data_in(5)) & x"00"
                                 + p1_chk_accum_sig;
                         ELSE
@@ -386,7 +389,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p2_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p2_len_read_sig MOD 2 = 0 THEN
                             p3_chk_accum_sig <= UNSIGNED(p2_data_in(4)) & x"00"
                                 + p2_chk_accum_sig;
                         ELSE
@@ -427,7 +430,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p3_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p3_len_read_sig MOD 2 = 0 THEN
                             p4_chk_accum_sig <= UNSIGNED(p3_data_in(3)) & x"00"
                                 + p3_chk_accum_sig;
                         ELSE
@@ -468,7 +471,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p4_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p4_len_read_sig MOD 2 = 0 THEN
                             p5_chk_accum_sig <= UNSIGNED(p4_data_in(2)) & x"00"
                                 + p4_chk_accum_sig;
                         ELSE
@@ -509,7 +512,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p5_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p5_len_read_sig MOD 2 = 0 THEN
                             p6_chk_accum_sig <= UNSIGNED(p5_data_in(1)) & x"00"
                                 + p5_chk_accum_sig;
                         ELSE
@@ -550,7 +553,7 @@ BEGIN
                             NULL;
                     END CASE;
                     IF p6_len_read_sig < 20 THEN
-                        IF start_len_read_sig MOD 2 = 0 THEN
+                        IF p6_len_read_sig MOD 2 = 0 THEN
                             p7_chk_accum_sig <= UNSIGNED(p6_data_in(0)) & x"00"
                                 + p6_chk_accum_sig;
                         ELSE
@@ -570,20 +573,23 @@ BEGIN
                 IF p8_data_in_err = '0' THEN
                     p8_data_in_err <= p7_data_in_err;
                 END IF;
-
+                IF p8_data_in_end = '1' THEN
+                    checksum_buffer := (others => '0');
+                END IF;
                 -- End sets for Stage 8 of Pipeline (Output)
 
                 -- Start of Stage 7
 
-                checksum_buffer := p7_chk_accum_sig;
+                checksum_buffer := checksum_buffer + p7_chk_accum_sig;
                 IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
                     checksum_buffer := checksum_buffer(20 DOWNTO 16) +
                         "00000" & checksum_buffer(15 DOWNTO 0);
                 END IF;
-                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
-                    checksum_buffer := checksum_buffer(20 DOWNTO 16) +
-                        "00000" & checksum_buffer(15 DOWNTO 0);
-                END IF;
+--                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
+--                    checksum_buffer := checksum_buffer(20 DOWNTO 16) +
+--                        "00000" & checksum_buffer(15 DOWNTO 0);
+--                END IF;
+                chk_sum_int <= checksum_buffer;
                 IF TO_INTEGER(p7_len_read_sig) > 19 THEN
                     IF checksum_buffer /= x"FFFF" THEN
                         p8_data_in_err <= '1';
@@ -602,4 +608,3 @@ BEGIN
     Data_out_end <= p8_data_in_end;
     Data_out_err <= p8_data_in_err;
 END ARCHITECTURE;
-
