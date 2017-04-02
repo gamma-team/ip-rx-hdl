@@ -31,7 +31,7 @@ END IPv4_RX_TB;
 
 ARCHITECTURE Behavioral OF IPv4_RX_TB IS
 -- output file
-FILE Data_output        : TEXT OPEN WRITE_MODE IS "output.txt";
+FILE Data_output        : TEXT OPEN WRITE_MODE IS "IPv4 common length even_output.txt";
 -- CONSTANT declarations
 -- data width of interfacing buses
 CONSTANT data_width     : POSITIVE := 8;
@@ -175,7 +175,7 @@ BEGIN
     
     REPORT "TB - loading test data";
     -- open test case file
-    file_open(Test_file, "RX_test.txt", READ_MODE);
+    file_open(Test_file, "IPv4 common length even.txt", READ_MODE);
     
     WHILE NOT ENDFILE(Test_file) loop
         -- read line from file
