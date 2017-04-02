@@ -31,7 +31,7 @@ END IP_RX_TB_POST_SYNTH;
 
 ARCHITECTURE Behavioral OF IP_RX_TB_POST_SYNTH IS
 -- output file
-FILE Data_output        : TEXT OPEN WRITE_MODE IS "IPv4 with 576 byte packet - bad chksm_output.txt";
+FILE Data_output        : TEXT OPEN APPEND_MODE IS "IPv4 with 576 byte packet - bad chksm_output.txt";
 -- CONSTANT declarations
 -- data width of interfacing buses
 CONSTANT data_width     : POSITIVE := 8;
