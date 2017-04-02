@@ -284,6 +284,8 @@ BEGIN
                         ELSE
                             p0_chk_accum_sig <= "0" & x"000" & UNSIGNED(data_in_sig(7));
                         END IF;
+                    ELSE
+                        p0_chk_accum_sig <= (OTHERS => '0');
                     END IF;
                     --p0_len_read_sig <= start_len_read_sig + 1;
                 END IF;
