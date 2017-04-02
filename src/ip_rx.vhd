@@ -65,7 +65,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p0_data_in : DATA_BUS;
     SIGNAL p0_data_in_valid
-        : STD_LOGIC_VECTOR(Data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p0_data_in_start : STD_LOGIC;
     SIGNAL p0_data_in_end : STD_LOGIC;
     SIGNAL p0_data_in_err : STD_LOGIC;
@@ -74,7 +74,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p1_data_in : DATA_BUS;
     SIGNAL p1_data_in_valid
-        : STD_LOGIC_VECTOR(p0_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p1_data_in_start : STD_LOGIC;
     SIGNAL p1_data_in_end : STD_LOGIC;
     SIGNAL p1_data_in_err : STD_LOGIC;
@@ -83,7 +83,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p2_data_in : DATA_BUS;
     SIGNAL p2_data_in_valid
-        : STD_LOGIC_VECTOR(p1_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p2_data_in_start : STD_LOGIC;
     SIGNAL p2_data_in_end : STD_LOGIC;
     SIGNAL p2_data_in_err : STD_LOGIC;
@@ -92,7 +92,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p3_data_in : DATA_BUS;
     SIGNAL p3_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p3_data_in_start : STD_LOGIC;
     SIGNAL p3_data_in_end : STD_LOGIC;
     SIGNAL p3_data_in_err : STD_LOGIC;
@@ -101,7 +101,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p4_data_in : DATA_BUS;
     SIGNAL p4_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p4_data_in_start : STD_LOGIC;
     SIGNAL p4_data_in_end : STD_LOGIC;
     SIGNAL p4_data_in_err : STD_LOGIC;
@@ -110,7 +110,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p5_data_in : DATA_BUS;
     SIGNAL p5_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p5_data_in_start : STD_LOGIC;
     SIGNAL p5_data_in_end : STD_LOGIC;
     SIGNAL p5_data_in_err : STD_LOGIC;
@@ -119,7 +119,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p6_data_in : DATA_BUS;
     SIGNAL p6_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p6_data_in_start : STD_LOGIC;
     SIGNAL p6_data_in_end : STD_LOGIC;
     SIGNAL p6_data_in_err : STD_LOGIC;
@@ -128,7 +128,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p7_data_in : DATA_BUS;
     SIGNAL p7_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p7_data_in_start : STD_LOGIC;
     SIGNAL p7_data_in_end : STD_LOGIC;
     SIGNAL p7_data_in_err : STD_LOGIC;
@@ -137,7 +137,7 @@ ARCHITECTURE normal OF ip_rx IS
 
     SIGNAL p8_data_in : DATA_BUS;
     SIGNAL p8_data_in_valid
-        : STD_LOGIC_VECTOR(p2_data_in_valid'length - 1 DOWNTO 0);
+        : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p8_data_in_start : STD_LOGIC;
     SIGNAL p8_data_in_end : STD_LOGIC;
     SIGNAL p8_data_in_err : STD_LOGIC;
@@ -234,12 +234,7 @@ BEGIN
                 p0_data_in_valid <= Data_in_valid;
                 p0_data_in_start <= Data_in_start;
                 p0_data_in_end <= Data_in_end;
-                IF p0_data_in_err = '0' THEN
-                    p0_data_in_err <= Data_in_err;
-                END IF;
-                IF Data_in_end = '1' THEN
-                    start_len_read_sig <= (OTHERS => '0');
-                END IF;
+                p0_data_in_err <= Data_in_err;
                 FOR i in 0 to width - 1 LOOP
                     IF Data_in_valid(i) = '1' THEN
                         start_valid_count := start_valid_count + 1;
@@ -247,6 +242,9 @@ BEGIN
                 END LOOP;
                 start_len_read_sig <= start_len_read_sig + start_valid_count;
                 p0_len_read_sig <= start_len_read_sig;
+                IF Data_in_end = '1' THEN
+                    start_len_read_sig <= (OTHERS => '0');
+                END IF;
                 -- End sets for Stage 0 of Pipeline
 
                 -- Start Pre-Stage 0 of Pipeline
@@ -292,7 +290,7 @@ BEGIN
 
                 -- Start of Stage 0
 
-                IF Data_in_valid(6) = '1' THEN
+                IF p0_data_in_valid(6) = '1' THEN
                     CASE TO_INTEGER(p0_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p1_data_in_valid(6) <= '0';
@@ -333,7 +331,7 @@ BEGIN
 
                 -- Start of Stage 1
 
-                IF Data_in_valid(5) = '1' THEN
+                IF p1_data_in_valid(5) = '1' THEN
                     CASE TO_INTEGER(p1_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p2_data_in_valid(5) <= '0';
@@ -374,7 +372,7 @@ BEGIN
 
                 -- Start of Stage 2
 
-                IF Data_in_valid(4) = '1' THEN
+                IF p2_data_in_valid(4) = '1' THEN
                     CASE TO_INTEGER(p2_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p3_data_in_valid(4) <= '0';
@@ -415,7 +413,7 @@ BEGIN
 
                 -- Start of Stage 3
 
-                IF Data_in_valid(3) = '1' THEN
+                IF p3_data_in_valid(3) = '1' THEN
                     CASE TO_INTEGER(p3_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p4_data_in_valid(3) <= '0';
@@ -456,7 +454,7 @@ BEGIN
 
                 -- Start of Stage 4
 
-                IF Data_in_valid(2) = '1' THEN
+                IF p4_data_in_valid(2) = '1' THEN
                     CASE TO_INTEGER(p4_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p5_data_in_valid(2) <= '0';
@@ -497,7 +495,7 @@ BEGIN
 
                 -- Start of Stage 5
 
-                IF Data_in_valid(1) = '1' THEN
+                IF p5_data_in_valid(1) = '1' THEN
                     CASE TO_INTEGER(p5_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p6_data_in_valid(1) <= '0';
@@ -538,7 +536,7 @@ BEGIN
 
                 -- Start of Stage 6
 
-                IF Data_in_valid(0) = '1' THEN
+                IF p6_data_in_valid(0) = '1' THEN
                     CASE TO_INTEGER(p6_len_read_sig) IS
                         WHEN 0 to 8 =>
                             p7_data_in_valid(0) <= '0';
