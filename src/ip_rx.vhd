@@ -59,7 +59,7 @@ ARCHITECTURE normal OF ip_rx IS
     CONSTANT UDP_PROTO : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"11";
     TYPE DATA_BUS IS ARRAY (width - 1 DOWNTO 0)
         OF STD_LOGIC_VECTOR(7 DOWNTO 0);
-    
+
     attribute dont_touch : string;
 
     SIGNAL data_in_sig : DATA_BUS;
@@ -152,13 +152,13 @@ ARCHITECTURE normal OF ip_rx IS
     SIGNAL p8_data_in_start : STD_LOGIC;
     SIGNAL p8_data_in_end : STD_LOGIC;
     SIGNAL p8_data_in_err : STD_LOGIC;
-    
+
 BEGIN
     -- Input signal wiring
     gen_in_data: FOR i IN 0 TO width - 1 GENERATE
         data_in_sig(i) <= Data_in((i + 1) * 8 - 1 DOWNTO i * 8);
     END GENERATE;
-    
+
     PROCESS(Clk)
         VARIABLE checksum_buffer : UNSIGNED(20 DOWNTO 0);
     BEGIN
@@ -235,7 +235,7 @@ BEGIN
                 p8_data_in_start <= '0';
                 p8_data_in_end <= '0';
                 p8_data_in_err <= '0';
-                
+
                 checksum_buffer := (others => '0');
 
             ELSE
@@ -247,17 +247,16 @@ BEGIN
                 p0_data_in_start <= Data_in_start;
                 p0_data_in_end <= Data_in_end;
                 p0_data_in_err <= Data_in_err;
-                start_len_read_sig <= start_len_read_sig + unsigned'(""&Data_in_valid(7))
-                                        + unsigned'(""&Data_in_valid(6))+ unsigned'(""&Data_in_valid(5))
-                                        + unsigned'(""&Data_in_valid(4))+ unsigned'(""&Data_in_valid(3))
-                                        + unsigned'(""&Data_in_valid(2))+ unsigned'(""&Data_in_valid(1))
-                                        + unsigned'(""&Data_in_valid(0));
-                    
-                p0_len_read_sig <= start_len_read_sig + unsigned'(""&Data_in_valid(7));
+                start_len_read_sig <= start_len_read_sig + UNSIGNED'(""&Data_in_valid(7))
+                    + UNSIGNED'(""&Data_in_valid(6)) + UNSIGNED'(""&Data_in_valid(5))
+                    + UNSIGNED'(""&Data_in_valid(4)) + UNSIGNED'(""&Data_in_valid(3))
+                    + UNSIGNED'(""&Data_in_valid(2)) + UNSIGNED'(""&Data_in_valid(1))
+                    + UNSIGNED'(""&Data_in_valid(0));
+                p0_len_read_sig <= start_len_read_sig + UNSIGNED'(""&Data_in_valid(7));
                 IF Data_in_end = '1' THEN
                     start_len_read_sig <= (OTHERS => '0');
                     p0_chk_accum_sig <= (OTHERS => '0');
-                    
+
                 END IF;
                 -- End sets for Stage 0 of Pipeline
 
@@ -280,9 +279,11 @@ BEGIN
                     IF start_len_read_sig < 20 THEN
                          -- Todo: test other ways of padding to see effect
                         IF start_len_read_sig MOD 2 = 0 THEN
-                            p0_chk_accum_sig <= "00000" & UNSIGNED(data_in_sig(7)) & x"00";
+                            p0_chk_accum_sig <= "00000" &
+                                UNSIGNED(data_in_sig(7)) & x"00";
                         ELSE
-                            p0_chk_accum_sig <= "0" & x"000" & UNSIGNED(data_in_sig(7));
+                            p0_chk_accum_sig <= "0" & x"000" &
+                                UNSIGNED(data_in_sig(7));
                         END IF;
                     ELSE
                         p0_chk_accum_sig <= (OTHERS => '0');
@@ -578,7 +579,7 @@ BEGIN
                 END IF;
 
                 -- Sets for Stage 8 of Pipeline (Output)
-                
+
                 p8_data_in <= p7_data_in;
                 p8_data_in_valid <= p7_data_in_valid;
                 p8_data_in_start <= p7_data_in_start;
@@ -586,14 +587,15 @@ BEGIN
                 IF p8_data_in_err = '0' THEN
                     p8_data_in_err <= p7_data_in_err;
                 END IF;
-                
+
                 -- End sets for Stage 8 of Pipeline (Output)
 
                 -- Start of Stage 7
 
                 checksum_buffer := checksum_buffer + p7_chk_accum_sig;
                 IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
-                    checksum_buffer := unsigned'(x"0000" & checksum_buffer(20 DOWNTO 16)) +
+                    checksum_buffer := unsigned'(x"0000" &
+                        checksum_buffer(20 DOWNTO 16)) +
                         unsigned'("00000" & checksum_buffer(15 DOWNTO 0));
                 END IF;
                 IF (p8_data_in_end = '1') THEN
