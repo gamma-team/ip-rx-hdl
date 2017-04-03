@@ -252,7 +252,7 @@ BEGIN
                     + UNSIGNED'(""&Data_in_valid(4)) + UNSIGNED'(""&Data_in_valid(3))
                     + UNSIGNED'(""&Data_in_valid(2)) + UNSIGNED'(""&Data_in_valid(1))
                     + UNSIGNED'(""&Data_in_valid(0));
-                p0_len_read_sig <= start_len_read_sig + UNSIGNED'(""&Data_in_valid(7));
+                p0_len_read_sig <= start_len_read_sig + UNSIGNED'(""&Data_in_valid(0));
                 IF Data_in_end = '1' THEN
                     start_len_read_sig <= (OTHERS => '0');
                     p0_chk_accum_sig <= (OTHERS => '0');
@@ -262,17 +262,17 @@ BEGIN
 
                 -- Start Pre-Stage 0 of Pipeline
 
-                IF Data_in_valid(7) = '1' THEN
+                IF Data_in_valid(0) = '1' THEN
                 -- start_valid_count hasn't been added to start_len_read_sig yet
                     CASE TO_INTEGER(start_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p0_data_in_valid(7) <= '0';
+                            p0_data_in_valid(0) <= '0';
                         WHEN 9 =>
-                            IF data_in_sig(7) /= UDP_PROTO THEN
+                            IF data_in_sig(0) /= UDP_PROTO THEN
                                 p0_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p0_data_in_valid(7) <= '0';
+                            p0_data_in_valid(0) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
@@ -280,10 +280,10 @@ BEGIN
                          -- Todo: test other ways of padding to see effect
                         IF start_len_read_sig MOD 2 = 0 THEN
                             p0_chk_accum_sig <= "00000" &
-                                UNSIGNED(data_in_sig(7)) & x"00";
+                                UNSIGNED(data_in_sig(0)) & x"00";
                         ELSE
                             p0_chk_accum_sig <= "0" & x"000" &
-                                UNSIGNED(data_in_sig(7));
+                                UNSIGNED(data_in_sig(0));
                         END IF;
                     ELSE
                         p0_chk_accum_sig <= (OTHERS => '0');
@@ -307,25 +307,25 @@ BEGIN
 
                 -- Start of Stage 0
 
-                IF p0_data_in_valid(6) = '1' THEN
+                IF p0_data_in_valid(1) = '1' THEN
                     CASE TO_INTEGER(p0_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p1_data_in_valid(6) <= '0';
+                            p1_data_in_valid(1) <= '0';
                         WHEN 9 =>
-                            IF p0_data_in(6) /= UDP_PROTO THEN
+                            IF p0_data_in(1) /= UDP_PROTO THEN
                                 p1_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p1_data_in_valid(6) <= '0';
+                            p1_data_in_valid(1) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p0_len_read_sig < 20 THEN
                         IF p0_len_read_sig MOD 2 = 0 THEN
-                            p1_chk_accum_sig <= UNSIGNED(p0_data_in(6)) & x"00"
+                            p1_chk_accum_sig <= UNSIGNED(p0_data_in(1)) & x"00"
                                 + p0_chk_accum_sig;
                         ELSE
-                            p1_chk_accum_sig <= x"00" & UNSIGNED(p0_data_in(6))
+                            p1_chk_accum_sig <= x"00" & UNSIGNED(p0_data_in(1))
                                 + p0_chk_accum_sig;
                         END IF;
                     END IF;
@@ -348,25 +348,25 @@ BEGIN
 
                 -- Start of Stage 1
 
-                IF p1_data_in_valid(5) = '1' THEN
+                IF p1_data_in_valid(2) = '1' THEN
                     CASE TO_INTEGER(p1_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p2_data_in_valid(5) <= '0';
+                            p2_data_in_valid(2) <= '0';
                         WHEN 9 =>
-                            IF p1_data_in(5) /= UDP_PROTO THEN
+                            IF p1_data_in(2) /= UDP_PROTO THEN
                                 p2_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p2_data_in_valid(5) <= '0';
+                            p2_data_in_valid(2) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p1_len_read_sig < 20 THEN
                         IF p1_len_read_sig MOD 2 = 0 THEN
-                            p2_chk_accum_sig <= UNSIGNED(p1_data_in(5)) & x"00"
+                            p2_chk_accum_sig <= UNSIGNED(p1_data_in(2)) & x"00"
                                 + p1_chk_accum_sig;
                         ELSE
-                            p2_chk_accum_sig <= x"00" & UNSIGNED(p1_data_in(5))
+                            p2_chk_accum_sig <= x"00" & UNSIGNED(p1_data_in(2))
                                 + p1_chk_accum_sig;
                         END IF;
                     END IF;
@@ -389,25 +389,25 @@ BEGIN
 
                 -- Start of Stage 2
 
-                IF p2_data_in_valid(4) = '1' THEN
+                IF p2_data_in_valid(3) = '1' THEN
                     CASE TO_INTEGER(p2_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p3_data_in_valid(4) <= '0';
+                            p3_data_in_valid(3) <= '0';
                         WHEN 9 =>
-                            IF p2_data_in(4) /= UDP_PROTO THEN
+                            IF p2_data_in(3) /= UDP_PROTO THEN
                                 p3_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p3_data_in_valid(4) <= '0';
+                            p3_data_in_valid(3) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p2_len_read_sig < 20 THEN
                         IF p2_len_read_sig MOD 2 = 0 THEN
-                            p3_chk_accum_sig <= UNSIGNED(p2_data_in(4)) & x"00"
+                            p3_chk_accum_sig <= UNSIGNED(p2_data_in(3)) & x"00"
                                 + p2_chk_accum_sig;
                         ELSE
-                            p3_chk_accum_sig <= x"00" & UNSIGNED(p2_data_in(4))
+                            p3_chk_accum_sig <= x"00" & UNSIGNED(p2_data_in(3))
                                 + p2_chk_accum_sig;
                         END IF;
                     END IF;
@@ -430,25 +430,25 @@ BEGIN
 
                 -- Start of Stage 3
 
-                IF p3_data_in_valid(3) = '1' THEN
+                IF p3_data_in_valid(4) = '1' THEN
                     CASE TO_INTEGER(p3_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p4_data_in_valid(3) <= '0';
+                            p4_data_in_valid(4) <= '0';
                         WHEN 9 =>
-                            IF p3_data_in(3) /= UDP_PROTO THEN
+                            IF p3_data_in(4) /= UDP_PROTO THEN
                                 p4_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p4_data_in_valid(3) <= '0';
+                            p4_data_in_valid(4) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p3_len_read_sig < 20 THEN
                         IF p3_len_read_sig MOD 2 = 0 THEN
-                            p4_chk_accum_sig <= UNSIGNED(p3_data_in(3)) & x"00"
+                            p4_chk_accum_sig <= UNSIGNED(p3_data_in(4)) & x"00"
                                 + p3_chk_accum_sig;
                         ELSE
-                            p4_chk_accum_sig <= x"00" & UNSIGNED(p3_data_in(3))
+                            p4_chk_accum_sig <= x"00" & UNSIGNED(p3_data_in(4))
                                 + p3_chk_accum_sig;
                         END IF;
                     END IF;
@@ -471,25 +471,25 @@ BEGIN
 
                 -- Start of Stage 4
 
-                IF p4_data_in_valid(2) = '1' THEN
+                IF p4_data_in_valid(5) = '1' THEN
                     CASE TO_INTEGER(p4_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p5_data_in_valid(2) <= '0';
+                            p5_data_in_valid(5) <= '0';
                         WHEN 9 =>
-                            IF p4_data_in(2) /= UDP_PROTO THEN
+                            IF p4_data_in(5) /= UDP_PROTO THEN
                                 p5_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p5_data_in_valid(2) <= '0';
+                            p5_data_in_valid(5) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p4_len_read_sig < 20 THEN
                         IF p4_len_read_sig MOD 2 = 0 THEN
-                            p5_chk_accum_sig <= UNSIGNED(p4_data_in(2)) & x"00"
+                            p5_chk_accum_sig <= UNSIGNED(p4_data_in(5)) & x"00"
                                 + p4_chk_accum_sig;
                         ELSE
-                            p5_chk_accum_sig <= x"00" & UNSIGNED(p4_data_in(2))
+                            p5_chk_accum_sig <= x"00" & UNSIGNED(p4_data_in(5))
                                 + p4_chk_accum_sig;
                         END IF;
                     END IF;
@@ -512,25 +512,25 @@ BEGIN
 
                 -- Start of Stage 5
 
-                IF p5_data_in_valid(1) = '1' THEN
+                IF p5_data_in_valid(6) = '1' THEN
                     CASE TO_INTEGER(p5_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p6_data_in_valid(1) <= '0';
+                            p6_data_in_valid(6) <= '0';
                         WHEN 9 =>
-                            IF p5_data_in(1) /= UDP_PROTO THEN
+                            IF p5_data_in(6) /= UDP_PROTO THEN
                                 p6_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p6_data_in_valid(1) <= '0';
+                            p6_data_in_valid(6) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p5_len_read_sig < 20 THEN
                         IF p5_len_read_sig MOD 2 = 0 THEN
-                            p6_chk_accum_sig <= UNSIGNED(p5_data_in(1)) & x"00"
+                            p6_chk_accum_sig <= UNSIGNED(p5_data_in(6)) & x"00"
                                 + p5_chk_accum_sig;
                         ELSE
-                            p6_chk_accum_sig <= x"00" & UNSIGNED(p5_data_in(1))
+                            p6_chk_accum_sig <= x"00" & UNSIGNED(p5_data_in(6))
                                 + p5_chk_accum_sig;
                         END IF;
                     END IF;
@@ -553,25 +553,25 @@ BEGIN
 
                 -- Start of Stage 6
 
-                IF p6_data_in_valid(0) = '1' THEN
+                IF p6_data_in_valid(7) = '1' THEN
                     CASE TO_INTEGER(p6_len_read_sig) IS
                         WHEN 0 to 8 =>
-                            p7_data_in_valid(0) <= '0';
+                            p7_data_in_valid(7) <= '0';
                         WHEN 9 =>
-                            IF p6_data_in(0) /= UDP_PROTO THEN
+                            IF p6_data_in(7) /= UDP_PROTO THEN
                                 p7_data_in_err <= '1';
                             END IF;
                         WHEN 10 | 11 =>
-                            p7_data_in_valid(0) <= '0';
+                            p7_data_in_valid(7) <= '0';
                         WHEN OTHERS =>
                             NULL;
                     END CASE;
                     IF p6_len_read_sig < 20 THEN
                         IF p6_len_read_sig MOD 2 = 0 THEN
-                            p7_chk_accum_sig <= UNSIGNED(p6_data_in(0)) & x"00"
+                            p7_chk_accum_sig <= UNSIGNED(p6_data_in(7)) & x"00"
                                 + p6_chk_accum_sig;
                         ELSE
-                            p7_chk_accum_sig <= x"00" & UNSIGNED(p6_data_in(0))
+                            p7_chk_accum_sig <= x"00" & UNSIGNED(p6_data_in(7))
                                 + p6_chk_accum_sig;
                         END IF;
                     END IF;
