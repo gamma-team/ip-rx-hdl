@@ -31,7 +31,7 @@ END IP_RX_TB_POST_SYNTH;
 
 ARCHITECTURE Behavioral OF IP_RX_TB_POST_SYNTH IS
 -- output file
-FILE Data_output        : TEXT OPEN APPEND_MODE IS "IPv4 with 576 byte packet - bad chksm_output.txt";
+FILE Data_output        : TEXT OPEN WRITE_MODE IS "IPv4 common length even - odd - even - bad -odd_output.txt";
 -- CONSTANT declarations
 -- data width of interfacing buses
 CONSTANT data_width     : POSITIVE := 8;
@@ -53,6 +53,8 @@ SIGNAL Data_out_valid   : STD_LOGIC_VECTOR(data_width - 1 DOWNTO 0);
 SIGNAL Data_out_start   : STD_LOGIC;
 SIGNAL Data_out_end     : STD_LOGIC;
 SIGNAL Data_out_err     : STD_LOGIC;
+SIGNAL Data_in_cycles   : INTEGER;
+SIGNAL Data_out_cycles   : INTEGER := 0;
 
 -- Component declaration from Github
 COMPONENT ip_rx IS
@@ -164,12 +166,13 @@ BEGIN
     Data_in_start     <= '0';
     Data_in_end       <= '0';
     Data_in_err       <= '0';
+    Data_in_cycles    <= 0;
     -- wait for 10 clock cycles
     WAIT FOR 10 * period;
     
     REPORT "TB - loading test data";
     -- open test case file
-    file_open(Test_file, "IPv4 with 576 byte packet - bad chksm.txt", READ_MODE);
+    file_open(Test_file, "IPv4 common length even - odd - even - bad -odd.txt", READ_MODE);
     
     WHILE NOT ENDFILE(Test_file) loop
         -- read line from file
@@ -185,6 +188,7 @@ BEGIN
         Data_in <= Data_din;
         Data_in_valid <= Data_vin;
         Data_in_start <= Data_sin(0);
+        Data_in_cycles <= Data_in_cycles + TO_INTEGER(UNSIGNED(Data_sin));
         Data_in_end <= Data_ein(0);
         
         -- Wait for rising edge to change data
@@ -256,6 +260,13 @@ BEGIN
         WRITE(Buff, V_space);
         WRITE(Buff, HSTR(Data_eout));
         WRITELINE(Data_output, Buff);
+        started := '0';
+        Data_out_cycles <= Data_out_cycles + 1;
+        
+    END IF;
+    
+    
+    IF ((Data_out_cycles = Data_in_cycles) and (Data_out_cycles > 0)) THEN
         FILE_CLOSE(Data_output);
         WAIT;
     END IF;
