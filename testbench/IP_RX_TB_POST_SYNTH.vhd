@@ -31,7 +31,7 @@ END IP_RX_TB_POST_SYNTH;
 
 ARCHITECTURE Behavioral OF IP_RX_TB_POST_SYNTH IS
 -- output file
-FILE Data_output        : TEXT OPEN WRITE_MODE IS "IPv4 common length even - odd - even - bad -odd_output.txt";
+FILE Data_output        : TEXT OPEN WRITE_MODE IS "IPv4_Rx_Test_Suite_output.txt";
 -- CONSTANT declarations
 -- data width of interfacing buses
 CONSTANT data_width     : POSITIVE := 8;
@@ -55,6 +55,8 @@ SIGNAL Data_out_end     : STD_LOGIC;
 SIGNAL Data_out_err     : STD_LOGIC;
 SIGNAL Data_in_cycles   : INTEGER;
 SIGNAL Data_out_cycles   : INTEGER := 0;
+TYPE TC is array (0 to 9) of STRING(1 to 3);
+SIGNAL Test_cases       : TC;
 
 -- Component declaration from Github
 COMPONENT ip_rx IS
@@ -156,10 +158,12 @@ FILE_LOADER: PROCESS
     VARIABLE V_space   : CHARACTER;
     VARIABLE Rdata     : LINE;
     VARIABLE Start     : STD_LOGIC;
+    VARIABLE Cur_tc    : STRING(1 to 3);
+    VARIABLE tc_plc    : INTEGER;
 BEGIN
     -- set the load completion signal to 0
     Load_complete <= '0';
-    
+    tc_plc := 0;
     -- set module inputs to 0
     Data_in           <= (OTHERS => '0');
     Data_in_valid     <= (OTHERS => '0');
@@ -167,16 +171,69 @@ BEGIN
     Data_in_end       <= '0';
     Data_in_err       <= '0';
     Data_in_cycles    <= 0;
+    Test_cases(0)<="TC0";
+    Test_cases(1)<="TC0";
+    Test_cases(2)<="TC0";
+    Test_cases(3)<="TC0";
+    Test_cases(4)<="TC0";
+    Test_cases(5)<="TC0";
+    Test_cases(6)<="TC0";
+    Test_cases(7)<="TC0";
+    Test_cases(8)<="TC0";
+    Test_cases(9)<="TC0";
     -- wait for 10 clock cycles
     WAIT FOR 10 * period;
     
     REPORT "TB - loading test data";
     -- open test case file
-    file_open(Test_file, "IPv4 common length even - odd - even - bad -odd.txt", READ_MODE);
+    file_open(Test_file, "IPv4_Rx_Test_Suite.txt", READ_MODE);
+    WAIT UNTIL FALLING_EDGE(Clk);
+    READLINE(Test_file, Rdata);
+    READ(Rdata, Cur_tc);
+    READ(Rdata, V_space);
+    IF (Cur_tc /= Test_cases(tc_plc)) THEN
+        IF (tc_plc > 0) THEN
+            IF (Cur_tc /= Test_cases(tc_plc - 1)) THEN
+                Test_cases(tc_plc) <= Cur_tc;
+                tc_plc := tc_plc + 1;
+            END IF;
+        ELSE
+            Test_cases(tc_plc) <= Cur_tc;
+            tc_plc := tc_plc + 1;
+        END IF;
+    END IF;
+    HREAD(Rdata, Data_din);
+    READ(Rdata, V_space);
+    HREAD(Rdata, Data_vin);
+    READ(Rdata, V_space);
+    HREAD(Rdata, Data_sin);
+    READ(Rdata, V_space);
+    HREAD(Rdata, Data_ein);
+    -- insert data protocol here
+    Data_in <= Data_din;
+    Data_in_valid <= Data_vin;
+    Data_in_start <= Data_sin(0);
+    Data_in_cycles <= Data_in_cycles + TO_INTEGER(UNSIGNED(Data_sin));
+    Data_in_end <= Data_ein(0);
+    
+    WAIT UNTIL FALLING_EDGE(Clk);
     
     WHILE NOT ENDFILE(Test_file) loop
         -- read line from file
         READLINE(Test_file, Rdata);
+        READ(Rdata, Cur_tc);
+        READ(Rdata, V_space);
+        IF (Cur_tc /= Test_cases(tc_plc)) THEN
+            IF (tc_plc > 0) THEN
+                IF (Cur_tc /= Test_cases(tc_plc - 1)) THEN
+                    Test_cases(tc_plc) <= Cur_tc;
+                    tc_plc := tc_plc + 1;
+                END IF;
+            ELSE
+                Test_cases(tc_plc) <= Cur_tc;
+                tc_plc := tc_plc + 1;
+            END IF;
+        END IF;
         HREAD(Rdata, Data_din);
         READ(Rdata, V_space);
         HREAD(Rdata, Data_vin);
@@ -223,15 +280,19 @@ MODULE_RESULTS: PROCESS
     VARIABLE Data_vout    : STD_LOGIC_VECTOR(data_width - 1 DOWNTO 0);
     VARIABLE V_space      : CHARACTER := ' ';
     VARIABLE Started      : STD_LOGIC := '0';
+    VARIABLE Tc_plc       : INTEGER := -1;
 BEGIN
     IF (Data_out_start = '1') THEN
         Started := '1';
+        Tc_plc := Tc_plc + 1;
     END IF;
     IF (Started = '1') THEN
         Data_dout := Data_out;
         Data_vout := Data_out_valid;
         Data_sout := (0=>Data_out_start, OTHERS => '0');
         Data_eout := (0=>Data_out_end, OTHERS => '0');
+        WRITE(Buff, Test_cases(Tc_plc));
+        WRITE(Buff, V_space);
         WRITE(Buff, HSTR(Data_dout));
         WRITE(Buff, V_space);
         WRITE(Buff, HSTR(Data_vout));
@@ -252,6 +313,8 @@ BEGIN
         Data_vout := Data_out_valid;
         Data_sout := (0=>Data_out_start, OTHERS => '0');
         Data_eout := (0=>Data_out_end, OTHERS => '0');
+        WRITE(Buff, Test_cases(Tc_plc));
+        WRITE(Buff, V_space);
         WRITE(Buff, HSTR(Data_dout));
         WRITE(Buff, V_space);
         WRITE(Buff, HSTR(Data_vout));
