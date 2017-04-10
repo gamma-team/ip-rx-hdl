@@ -145,13 +145,15 @@ ARCHITECTURE normal OF ip_rx IS
     attribute dont_touch of p7_len_read_sig: signal is "true";
     SIGNAL p7_chk_accum_sig : UNSIGNED(20 DOWNTO 0);
     attribute dont_touch of p7_chk_accum_sig: signal is "true";
-
+    
+    SIGNAL p8_len_read_sig : UNSIGNED(15 DOWNTO 0);
     SIGNAL p8_data_in : DATA_BUS;
     SIGNAL p8_data_in_valid
         : STD_LOGIC_VECTOR(width - 1 DOWNTO 0);
     SIGNAL p8_data_in_start : STD_LOGIC;
     SIGNAL p8_data_in_end : STD_LOGIC;
     SIGNAL p8_data_in_err : STD_LOGIC;
+    SIGNAL CHK_SUM_BUFFER_2: UNSIGNED(20 DOWNTO 0);
 
 BEGIN
     -- Input signal wiring
@@ -300,6 +302,9 @@ BEGIN
                 IF p1_data_in_err = '0' THEN
                     p1_data_in_err <= p0_data_in_err;
                 END IF;
+                IF p1_data_in_end = '1' THEN
+                    p1_data_in_err <= '0';
+                END IF;
                 p1_len_read_sig <= p0_len_read_sig;
                 p1_chk_accum_sig <= p0_chk_accum_sig;
 
@@ -340,6 +345,9 @@ BEGIN
                 p2_data_in_end <= p1_data_in_end;
                 IF p2_data_in_err = '0' THEN
                     p2_data_in_err <= p1_data_in_err;
+                END IF;
+                IF p2_data_in_end = '1' THEN
+                    p2_data_in_err <= '0';
                 END IF;
                 p2_len_read_sig <= p1_len_read_sig;
                 p2_chk_accum_sig <= p1_chk_accum_sig;
@@ -382,6 +390,9 @@ BEGIN
                 IF p3_data_in_err = '0' THEN
                     p3_data_in_err <= p2_data_in_err;
                 END IF;
+                IF p3_data_in_end = '1' THEN
+                    p3_data_in_err <= '0';
+                END IF;
                 p3_len_read_sig <= p2_len_read_sig;
                 p3_chk_accum_sig <= p2_chk_accum_sig;
 
@@ -422,6 +433,9 @@ BEGIN
                 p4_data_in_end <= p3_data_in_end;
                 IF p4_data_in_err = '0' THEN
                     p4_data_in_err <= p3_data_in_err;
+                END IF;
+                IF p4_data_in_end = '1' THEN
+                    p4_data_in_err <= '0';
                 END IF;
                 p4_len_read_sig <= p3_len_read_sig;
                 p4_chk_accum_sig <= p3_chk_accum_sig;
@@ -464,6 +478,9 @@ BEGIN
                 IF p5_data_in_err = '0' THEN
                     p5_data_in_err <= p4_data_in_err;
                 END IF;
+                IF p5_data_in_end = '1' THEN
+                    p5_data_in_err <= '0';
+                END IF;
                 p5_len_read_sig <= p4_len_read_sig;
                 p5_chk_accum_sig <= p4_chk_accum_sig;
 
@@ -504,6 +521,9 @@ BEGIN
                 p6_data_in_end <= p5_data_in_end;
                 IF p6_data_in_err = '0' THEN
                     p6_data_in_err <= p5_data_in_err;
+                END IF;
+                IF p6_data_in_end = '1' THEN
+                    p6_data_in_err <= '0';
                 END IF;
                 p6_len_read_sig <= p5_len_read_sig;
                 p6_chk_accum_sig <= p5_chk_accum_sig;
@@ -546,6 +566,9 @@ BEGIN
                 IF p7_data_in_err = '0' THEN
                     p7_data_in_err <= p6_data_in_err;
                 END IF;
+                IF p7_data_in_end = '1' THEN
+                    p7_data_in_err <= '0';
+                END IF;
                 p7_len_read_sig <= p6_len_read_sig;
                 p7_chk_accum_sig <= p6_chk_accum_sig;
 
@@ -579,7 +602,7 @@ BEGIN
                 END IF;
 
                 -- Sets for Stage 8 of Pipeline (Output)
-
+                p8_len_read_sig <= p7_len_read_sig;
                 p8_data_in <= p7_data_in;
                 p8_data_in_valid <= p7_data_in_valid;
                 p8_data_in_start <= p7_data_in_start;
@@ -591,25 +614,25 @@ BEGIN
                 -- End sets for Stage 8 of Pipeline (Output)
 
                 -- Start of Stage 7
-
+                IF p8_data_in_end = '1' THEN
+                    checksum_buffer := (others => '0');
+                END IF;
                 checksum_buffer := checksum_buffer + p7_chk_accum_sig;
-                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
+--                IF checksum_buffer(20 DOWNTO 16) /= "00000" THEN
                     checksum_buffer := unsigned'(x"0000" &
                         checksum_buffer(20 DOWNTO 16)) +
                         unsigned'("00000" & checksum_buffer(15 DOWNTO 0));
+--                END IF;
+                CHK_SUM_BUFFER_2 <= checksum_buffer;
+                
+                
+                IF TO_INTEGER(p8_len_read_sig) > 19  THEN
+                    IF CHK_SUM_BUFFER_2 /= x"FFFF" THEN
+                        p8_data_in_err <= '1';
+                    END IF;
                 END IF;
                 IF p8_data_in_end = '1' THEN
-                    p8_data_in_err <= p8_data_in_err and (not p8_data_in_end);
-                END IF;
-                
-                IF TO_INTEGER(p7_len_read_sig) > 19  THEN
-                    IF TO_INTEGER(p7_len_read_sig) > 30 OR p8_data_in_end = '1' THEN
-                        checksum_buffer := (others => '0');
-                    ELSE
-                        IF checksum_buffer /= x"FFFF" THEN
-                            p8_data_in_err <= '1';
-                        END IF;
-                    END IF;
+                    p8_data_in_err <= '0';
                 END IF;
             END IF;
         END IF;
