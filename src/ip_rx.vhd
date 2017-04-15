@@ -35,6 +35,8 @@ ENTITY ip_rx IS
         -- Indicate that there has been an error in the current data stream.
         -- Data_in will be ignored until the next Data_in_start assertion.
         Data_in_err : IN STD_LOGIC;
+        -- Acknowledges data
+        Data_in_ready : OUT STD_LOGIC;
 
         -- IPv4 payload data output bus to the UDP module.
         -- Byte offsets (all integer types are big endian):
@@ -51,7 +53,9 @@ ENTITY ip_rx IS
         Data_out_end : OUT STD_LOGIC;
         -- Indicate that there has been an error in the current datagram.
         -- Data_out should be ignored until the next Data_out_start assertion.
-        Data_out_err : OUT STD_LOGIC
+        Data_out_err : OUT STD_LOGIC;
+        -- Acknowledges data
+        Data_out_ready : IN STD_LOGIC
     );
 END ENTITY;
 
@@ -155,11 +159,17 @@ ARCHITECTURE normal OF ip_rx IS
     SIGNAL p8_data_in_err : STD_LOGIC;
     SIGNAL CHK_SUM_BUFFER_2: UNSIGNED(20 DOWNTO 0);
 
+    SIGNAL flow_enable : STD_LOGIC;
 BEGIN
     -- Input signal wiring
     gen_in_data: FOR i IN 0 TO width - 1 GENERATE
         data_in_sig(i) <= Data_in((i + 1) * 8 - 1 DOWNTO i * 8);
     END GENERATE;
+
+    -- Handle pushback
+    Data_in_ready <= flow_enable;
+    flow_enable <= '1' WHEN (p8_data_in_valid = x"00" OR Data_out_ready = '1')
+        ELSE '0';
 
     PROCESS(Clk)
         VARIABLE checksum_buffer : UNSIGNED(20 DOWNTO 0);
@@ -240,7 +250,7 @@ BEGIN
 
                 checksum_buffer := (others => '0');
 
-            ELSE
+            ELSIF flow_enable = '1' THEN
                 -- Begin sets for Stage 0 of Pipeline
                 -- This is before Pre-Stage 0 so p0_data_in_valid changes
                 -- overwrite values from Data_in_valid
